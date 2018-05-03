@@ -80,26 +80,27 @@ class Main : PApplet() {
 
         angle += 0.002f
 
-//        loadPixels()
-//        loop@ for (y in 0 until height) {
-//            for (x in 0 until width) {
-//                val index = x + y * width
-//                if (x > width / 4 && x < width / 2 + width / 4 && y > height / 4 && y < height / 2 + height / 4) {
-//                    val c = pixels[index]
-//                    val r = red(c)
-//                    val g = green(c)
-//                    val b = blue(c)
-//                    val radius = 1.3f
-////                var dist = (abs(x - width / 2f) + abs(y - height / 2f)) * radius
-//                    var dist = dist(x.toFloat(), y.toFloat(), width / 2f, height / 2f) * radius
-//                    pixels[index] = color(r - dist, g - dist, b - dist)
-//                } else {
-//                    pixels[index] = color(0f)
-//                }
-//
-//            }
-//        }
-//        updatePixels()
+        val lightSize = 10
+        loadPixels()
+        loop@ for (y in 0 until height) {
+            for (x in 0 until width) {
+                val index = x + y * width
+                if (x > width / lightSize && x < (width - width / lightSize) && y > (height / lightSize) && y < (height - height / lightSize)) {
+                    val c = pixels[index]
+                    val r = red(c)
+                    val g = green(c)
+                    val b = blue(c)
+                    val radius = 0.78f
+//                var dist = (abs(x - width / 2f) + abs(y - height / 2f)) * radius
+                    var dist = dist(x.toFloat(), y.toFloat(), width / 2f, height / 2f) * radius
+                    pixels[index] = color(r - dist, g - dist, b - dist)
+                } else {
+                    pixels[index] = color(0f)
+                }
+
+            }
+        }
+        updatePixels()
 
     }
 
