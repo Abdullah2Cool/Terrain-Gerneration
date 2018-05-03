@@ -3,24 +3,26 @@ import processing.core.PConstants
 import kotlin.math.roundToInt
 
 class Main : PApplet() {
-    var scrWidth: Int = 1280
+    var scrWidth: Int = 1200
     var scrHeight: Int = 800
-    var tileSize: Int = 10
-    var rows: Int = scrWidth / tileSize
-    var cols: Int = scrHeight / tileSize
+    var tileSize: Float = 20f
+    var rows: Int = scrWidth / tileSize.toInt()
+    var cols: Int = scrHeight / tileSize.toInt()
     var xOff = 10000f
     var yOff = 10000f
     var speed = 1f
-    var resolution = 1
+    var resolution = 170f
+    var sampleSize = tileSize * 2
+    var angle = 0f
     var allKeys = BooleanArray(512) {
         false
     }
 
     var Grid = Array(cols) {
-        val y = it.toFloat()
+        val y = it
         Array(rows) {
-            val x = it.toFloat()
-            Tile(x * tileSize.toFloat(), y * tileSize.toFloat(), tileSize.toFloat(), getType(x / tileSize, y / tileSize))
+            val x = it
+            Tile(x, y, tileSize, getData(x / tileSize, y / tileSize))
         }
     }
 
@@ -37,31 +39,34 @@ class Main : PApplet() {
 //                }
 //            }
 //        }
-        Grid[cols / 2][rows / 2].setData(Pair(Triple(0f, 0f, 0f), 0))
-        player = Player(rows / 2f, cols / 2f, tileSize.toFloat())
+        player = Player(Grid[cols / 2][rows / 2].x, Grid[cols / 2][rows / 2].y, tileSize * 3)
+//        player = Player(0, 0, tileSize)
     }
 
     override fun draw() {
         background(0)
         noStroke()
         if (frameCount % 2 == 0) {
-            if (allKeys[PConstants.UP]) {
-                if (!checkMove(player.x, player.y - 1)) yOff -= speed
-            } else if (allKeys[PConstants.DOWN]) {
-                if (!checkMove(player.x, player.y + 1)) yOff += speed
-            } else if (allKeys[PConstants.LEFT]) {
-                if (!checkMove(player.x - 1, player.y)) xOff -= speed
-            } else if (allKeys[PConstants.RIGHT]) {
-                if (!checkMove(player.x + 1, player.y)) xOff += speed
-            }
+
             for (y in 0 until cols) {
                 for (x in 0 until rows) {
                     val newX = (x + xOff)
                     val newY = (y + yOff)
-//                    val bHorizontal = (newX % 1 == 0f)
-//                    val bVertical = (newY % 1 == 0f)
-                    Grid[y][x].setData(getType(newX / tileSize / 2, newY / tileSize / 2))
+                    Grid[y][x].setData(getData(newX / sampleSize, newY / sampleSize))
                 }
+            }
+
+            val offset = (player.length / tileSize).toInt()
+            val up = checkMove(0, offset)
+            val down = checkMove(1, offset)
+            val left = checkMove(2, offset)
+            val right = checkMove(3, offset)
+
+            when {
+                allKeys[PConstants.UP] -> if (up) yOff -= speed
+                allKeys[PConstants.DOWN] -> if (down) yOff += speed
+                allKeys[PConstants.LEFT] -> if (left) xOff -= speed
+                allKeys[PConstants.RIGHT] -> if (right) xOff += speed
             }
         }
         for (y in 0 until cols) {
@@ -71,90 +76,77 @@ class Main : PApplet() {
         }
 
         player.show()
+        if (frameRate < 20) println(frameRate)
 
-//        println(frameRate)
+        angle += 0.002f
+
+//        loadPixels()
+//        loop@ for (y in 0 until height) {
+//            for (x in 0 until width) {
+//                val index = x + y * width
+//                if (x > width / 4 && x < width / 2 + width / 4 && y > height / 4 && y < height / 2 + height / 4) {
+//                    val c = pixels[index]
+//                    val r = red(c)
+//                    val g = green(c)
+//                    val b = blue(c)
+//                    val radius = 1.3f
+////                var dist = (abs(x - width / 2f) + abs(y - height / 2f)) * radius
+//                    var dist = dist(x.toFloat(), y.toFloat(), width / 2f, height / 2f) * radius
+//                    pixels[index] = color(r - dist, g - dist, b - dist)
+//                } else {
+//                    pixels[index] = color(0f)
+//                }
+//
+//            }
+//        }
+//        updatePixels()
+
     }
 
-    fun getType(x: Float, y: Float): Pair<Triple<Float, Float, Float>, Int> {
+    fun getData(x: Float, y: Float): Pair<Triple<Float, Float, Float>, Int> {
         val n = noise(x, y) * 255f
         var r = 0f
         var g = 0f
         var b = 0f
         var type = 0
 
-        val t = n - (n % resolution)
+//        resolution = sin(angle) * 255 + 1
+
+        var t = n - (n % resolution)
         val depth = 100
-        if (n < 100) {
-            r = 0f * (n / depth) + t
-            g = 0f * (n / depth) + t
-            b = 255f * (n / depth) + t
-            type = 3
-        } else {
-//            r = t / 5
-//            g = t
-//            b = 255 - t
-            r = 50 * (n / depth) + t
-            g = 255 * (n / depth) + t
-            b = 0 * (n / depth) + t
+        val u = (n / depth)
+        when {
+            n < 80 -> {
+                r = 0 * u + t
+                g = 102 * u + t
+                b = 255 * u + t
+//                r = 255 * u + t
+//                g = 102 * u + t
+//                b = 0 * u + t
+                type = 3
+            }
+            else -> {
+                r = 51 * u + t
+                g = 204 * u + t
+                b = 51 * u + t
+
+//                r = 153 * u + t
+//                g = 102 * u + t
+//                b = 0 * u + t
+            }
         }
 
-//        when (n) {
-//            in 0..51 -> {
-////                r = 255f
-////                g = 174f
-////                b = 3f
-//                r = 51f
-//                g = 51f
-//                b = 51f
-//                type = 1
-//            }
-//            in 51..102 -> {
-////                r = 230f
-////                g = 127f
-////                b = 13f
-//                r = 102f
-//                g = 102f
-//                b = 102f
-//                type = 1
-//            }
-//            in 102..153 -> {
-////                r = 254f
-////                g = 78f
-////                b = 0f
-//                r = 153f
-//                g = 153f
-//                b = 153f
-//                type = 1
-//            }
-//            in 153..204 -> {
-////                r = 255f
-////                g = 15f
-////                b = 128f
-//                r = 204f
-//                g = 204f
-//                b = 204f
-//                type = 1
-//            }
-//            in 204..255 -> {
-////                r = 233f
-////                g = 25f
-////                b = 15f
-//                r = 255f
-//                g = 15f
-//                b = 128f
-//                type = 3
-//            }
-//        }
         return Pair(Triple(r, g, b), type)
     }
 
     override fun keyPressed() {
         allKeys[keyCode] = true
 //        println(keyCode)
-        if (keyCode == 87) {
-            resolution++
-        } else if (keyCode == 83) {
-            resolution--
+//        println("Resolution: $resolution")
+//        println("Sample Size: $sampleSize")
+        when (keyCode) {
+            87 -> resolution++
+            83 -> resolution--
         }
     }
 
@@ -162,8 +154,65 @@ class Main : PApplet() {
         allKeys[keyCode] = false
     }
 
-    fun checkMove(x: Float, y: Float): Boolean {
-        return Grid[y.roundToInt()][x.roundToInt()].type == 3
+    fun checkMove(dir: Int, offset: Int): Boolean {
+        return when (dir) {
+            0 -> // up
+            {
+                var verdict = true
+                for (j in 0 until offset) {
+                    val x = player.x + j
+                    val y = player.y - 1
+                    if (!isMovable(x, y)) {
+                        Grid[y][x].myColor = Triple(255f, 0f, 0f)
+                        verdict = false
+                    }
+                }
+                verdict
+            }
+            1 -> // down
+            {
+                var verdict = true
+                for (j in 0 until offset) {
+                    val x = player.x + j
+                    val y = player.y + offset
+                    if (!isMovable(x, y)) {
+                        Grid[y][x].myColor = Triple(255f, 0f, 0f)
+                        verdict = false
+                    }
+                }
+                verdict
+            }
+            2 -> // left
+            {
+                var verdict = true
+                for (j in 0 until offset) {
+                    val x = player.x - 1
+                    val y = player.y + j
+                    if (!isMovable(x, y)) {
+                        Grid[y][x].myColor = Triple(255f, 0f, 0f)
+                        verdict = false
+                    }
+                }
+                verdict
+            }
+            else -> // right
+            {
+                var verdict = true
+                for (j in 0 until offset) {
+                    val x = player.x + offset
+                    val y = player.y + j
+                    if (!isMovable(x, y)) {
+                        Grid[y][x].myColor = Triple(255f, 0f, 0f)
+                        verdict = false
+                    }
+                }
+                verdict
+            }
+        }
+    }
+
+    fun isMovable(x: Int, y: Int): Boolean {
+        return Grid[y][x].type != 3
     }
 
     companion object {
