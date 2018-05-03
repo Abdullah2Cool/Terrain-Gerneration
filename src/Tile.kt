@@ -12,6 +12,7 @@ class Tile(var x: Int, var y: Int, var size: Float, var myData: Pair<Triple<Floa
         }
     }
 
+
     fun setData(data: Pair<Triple<Float, Float, Float>, Int>) {
         myColor = data.first
         type = data.second

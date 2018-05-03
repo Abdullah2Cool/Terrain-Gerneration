@@ -1,19 +1,19 @@
 import processing.core.PApplet
 import processing.core.PConstants
-import kotlin.math.roundToInt
 
 class Main : PApplet() {
     var scrWidth: Int = 1200
     var scrHeight: Int = 800
-    var tileSize: Float = 20f
+    var tileSize: Float = 10f
     var rows: Int = scrWidth / tileSize.toInt()
     var cols: Int = scrHeight / tileSize.toInt()
-    var xOff = 10000f
-    var yOff = 10000f
+    var xOff = 0f
+    var yOff = 0f
     var speed = 1f
     var resolution = 170f
-    var sampleSize = tileSize * 2
+    var sampleSize = tileSize * 8
     var angle = 0f
+    var changes = HashMap<Pair<Int, Int>, Int>()
     var allKeys = BooleanArray(512) {
         false
     }
@@ -39,20 +39,21 @@ class Main : PApplet() {
 //                }
 //            }
 //        }
-        player = Player(Grid[cols / 2][rows / 2].x, Grid[cols / 2][rows / 2].y, tileSize * 3)
+        player = Player(Grid[cols / 2][rows / 2].x, Grid[cols / 2][rows / 2].y, tileSize)
 //        player = Player(0, 0, tileSize)
     }
 
     override fun draw() {
         background(0)
         noStroke()
-        if (frameCount % 2 == 0) {
 
+
+        for (i in 0 until speed.toInt()) {
             for (y in 0 until cols) {
                 for (x in 0 until rows) {
                     val newX = (x + xOff)
                     val newY = (y + yOff)
-                    Grid[y][x].setData(getData(newX / sampleSize, newY / sampleSize))
+                    Grid[y][x].setData(getData(newX, newY))
                 }
             }
 
@@ -61,14 +62,14 @@ class Main : PApplet() {
             val down = checkMove(1, offset)
             val left = checkMove(2, offset)
             val right = checkMove(3, offset)
-
             when {
-                allKeys[PConstants.UP] -> if (up) yOff -= speed
-                allKeys[PConstants.DOWN] -> if (down) yOff += speed
-                allKeys[PConstants.LEFT] -> if (left) xOff -= speed
-                allKeys[PConstants.RIGHT] -> if (right) xOff += speed
+                allKeys[PConstants.UP] -> if (up) yOff -= 1
+                allKeys[PConstants.DOWN] -> if (down) yOff += 1
+                allKeys[PConstants.LEFT] -> if (left) xOff -= 1
+                allKeys[PConstants.RIGHT] -> if (right) xOff += 1
             }
         }
+
         for (y in 0 until cols) {
             for (x in 0 until rows) {
                 Grid[y][x].draw()
@@ -76,10 +77,12 @@ class Main : PApplet() {
         }
 
         player.show()
-        if (frameRate < 20) println(frameRate)
-
+//        showLight()
         angle += 0.002f
+        if (frameRate < 20) println(frameRate)
+    }
 
+    fun showLight() {
         val lightSize = 10
         loadPixels()
         loop@ for (y in 0 until height) {
@@ -101,11 +104,15 @@ class Main : PApplet() {
             }
         }
         updatePixels()
-
     }
 
     fun getData(x: Float, y: Float): Pair<Triple<Float, Float, Float>, Int> {
-        val n = noise(x, y) * 255f
+
+        if (changes.containsKey(Pair(x.toInt(), y.toInt()))) {
+            return Pair(Triple(0f, 0f, 0f), 3)
+        }
+
+        val n = noise(x / sampleSize, y / sampleSize) * 255f
         var r = 0f
         var g = 0f
         var b = 0f
@@ -117,37 +124,50 @@ class Main : PApplet() {
         val depth = 100
         val u = (n / depth)
         when {
-            n < 80 -> {
+            n < 100 -> {
                 r = 0 * u + t
                 g = 102 * u + t
                 b = 255 * u + t
-//                r = 255 * u + t
-//                g = 102 * u + t
-//                b = 0 * u + t
                 type = 3
             }
             else -> {
                 r = 51 * u + t
                 g = 204 * u + t
                 b = 51 * u + t
-
-//                r = 153 * u + t
-//                g = 102 * u + t
-//                b = 0 * u + t
             }
         }
 
         return Pair(Triple(r, g, b), type)
     }
 
+    override fun mouseDragged() {
+        val m = Pair((mouseX / tileSize).toInt(), (mouseY / tileSize).toInt())
+        for (y in 0 until cols) {
+            for (x in 0 until rows) {
+                val key = Pair((x + xOff).toInt(), (y + yOff).toInt())
+                val index = Pair(x, y)
+                if (m == index) {
+                    if (changes.containsKey(key)) {
+//                        println("Already changed.")
+//                        println(changes)
+                    } else {
+                        changes[key] = 0
+                    }
+                }
+            }
+        }
+
+
+    }
+
     override fun keyPressed() {
         allKeys[keyCode] = true
 //        println(keyCode)
 //        println("Resolution: $resolution")
-//        println("Sample Size: $sampleSize")
+//        println(xOff, yOff)
         when (keyCode) {
-            87 -> resolution++
-            83 -> resolution--
+            87 -> sampleSize *= 1f + 0.01f
+            83 -> sampleSize *= 1f - 0.01f
         }
     }
 
