@@ -30,17 +30,7 @@ class Main : PApplet() {
 
     override fun settings() {
         size(scrWidth, scrHeight)
-//        loop@ for (y in 0 until cols) {
-//            for (x in 0 until rows) {
-//                if (Grid[y][x].type == 0) {
-//                    player = Player(x.toFloat(), y.toFloat(), tileSize.toFloat())
-//                    println("Here")
-//                    break@loop
-//                }
-//            }
-//        }
-        player = Player(Grid[cols / 2][rows / 2].x, Grid[cols / 2][rows / 2].y, tileSize)
-//        player = Player(0, 0, tileSize)
+        player = Player(Grid[cols / 2][rows / 2].x, Grid[cols / 2][rows / 2].y, tileSize * 1)
     }
 
     override fun draw() {
@@ -124,7 +114,7 @@ class Main : PApplet() {
         val depth = 100
         val u = (n / depth)
         when {
-            n < 100 -> {
+            n < 80 -> {
                 r = 0 * u + t
                 g = 102 * u + t
                 b = 255 * u + t
@@ -147,11 +137,13 @@ class Main : PApplet() {
                 val key = Pair((x + xOff).toInt(), (y + yOff).toInt())
                 val index = Pair(x, y)
                 if (m == index) {
-                    if (changes.containsKey(key)) {
-//                        println("Already changed.")
-//                        println(changes)
-                    } else {
+                    if (mouseButton == LEFT) {
                         changes[key] = 0
+                        changes[Pair(key.first + 1, key.second)] = 0
+                        changes[Pair(key.first, key.second + 1)] = 0
+                        changes[Pair(key.first + 1, key.second + 1)] = 0
+                    } else {
+                        changes.remove(key)
                     }
                 }
             }
